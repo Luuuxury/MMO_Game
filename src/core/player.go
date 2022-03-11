@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"github.com/aceld/zinx/ziface"
+	"github.com/aceld/zinx/zinx_app_demo/mmo_game/pb"
 	"math/rand"
 	"sync"
 )
@@ -72,4 +73,41 @@ func (p *Player) SendMsg(msgId uint32, data proto.Message) {
 	}
 
 	return
+}
+
+/*
+根据我们之前的流程分析，那么在客户端建立连接过来之后，Server要自动的回复给客户端一个玩家ID，同时也要将当前玩家的坐标发送给客户端。
+所以我们这里面给Player定制了两个方法Player.SyncPid()和Player.BroadCastStartPosition()
+SyncPid()则为发送MsgID:1的消息，将当前上线的用户ID发送给客户端
+*/
+
+// SyncPid 告知客户端pid,同步已经生成的玩家ID给客户端
+func (p *Player) SyncPid() {
+	//组建MsgId0 proto数据
+	data := &pb.SyncPid{
+		Pid: p.Pid,
+	}
+
+	//发送数据给客户端
+	p.SendMsg(1, data)
+}
+
+// BroadCastStartPosition 广播玩家自己的出生地点
+// BroadCastStartPosition()则为发送MsgID:200的广播位置消息，虽然现在没有其他用户，不是广播，但是当前玩家自己的坐标也是要告知玩家的。
+func (p *Player) BroadCastStartPosition() {
+
+	msg := &pb.BroadCast{
+		Pid: p.Pid,
+		Tp:  2, //TP2 代表广播坐标
+		Data: &pb.BroadCast_P{
+			P: &pb.Position{
+				X: p.X,
+				Y: p.Y,
+				Z: p.Z,
+				V: p.V,
+			},
+		},
+	}
+
+	p.SendMsg(200, msg)
 }
